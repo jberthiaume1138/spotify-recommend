@@ -16,3 +16,25 @@ var getFromApi = function(endpoint, args) {
             });
     return emitter;
 };
+
+var app = express();
+app.use(express.static('public'));
+
+app.get('/search/:name', function(req, res) {
+    var searchReq = getFromApi('search', {
+        q: req.params.name,
+        limit: 1,
+        type: 'artist'
+    });
+
+    searchReq.on('end', function(item) {
+        var artist = item.artists.items[0];
+        res.json(artist);
+    });
+
+    searchReq.on('error', function(code) {
+        res.sendStatus(code);
+    });
+});
+
+app.listen(8080);
