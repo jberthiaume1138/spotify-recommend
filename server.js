@@ -17,6 +17,8 @@ var getFromApi = function(endpoint, args) {
     return emitter;
 };
 
+
+
 var app = express();
 app.use(express.static('public'));
 
@@ -29,6 +31,20 @@ app.get('/search/:name', function(req, res) {
 
     searchReq.on('end', function(item) {
         var artist = item.artists.items[0];
+
+        var endPoint = 'artists/' + artist.id + '/related-artists';
+
+        var searchRelated = getFromApi(endPoint);
+
+        searchRelated.on('end', function(item) {
+            item.artists.forEach(function(act){
+                console.log(act.name);
+            });
+            // console.log(item.artists);
+        });
+
+
+
         res.json(artist);
     });
 
