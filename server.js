@@ -35,45 +35,42 @@ app.get('/search/:name', function(req, res) {
         var searchRelated = getFromApi(endPoint);
 
         searchRelated.on('end', function(relatedCollection) {
-            // item.artists.forEach(function(act){
-            //     console.log(act.name);
-            // });
-            // console.log(item.artists);
-
             artist.related = relatedCollection.artists;
+
             var numberOfRelatedArtists = relatedCollection.artists.length;  // usually 20
             var completed = 0;
 
-            artist.related.forEach(function(band) {
+            var checkComplete = function() {
                 if (completed === numberOfRelatedArtists) {
-                    // we are done
-                    // return the now fully populated json object
-                    res.json(artist);               // key was to move this here
+                    // done - return the now fully populated json object
+                    res.json(artist);
                 }
-                else {
-                    //hit the API for the band's top tracks
-                    // var topTracksEndpoint = 'artists/' + artist.related[0].id + '/top-tracks';
-                    var topTracksEndpoint = 'artists/' + band.id + '/top-tracks';
-                    console.log(topTracksEndpoint);
+            };
 
-                    var searchTopTracks = getFromApi(topTracksEndpoint);
-                    searchTopTracks.on('end', function(topTracks) {
-                        band.tracks = topTracks.tracks;
-                    });
+            artist.related.forEach(function(relatedArtist) {
+                // hit the API for the relatedArtists' top tracks
+                var topTracksEndpoint = 'artists/' + relatedArtist.id + '/top-tracks?country=US';
 
-                    searchTopTracks.on('error', function(code) {
-                        res.sendStatus(404);
-                    });
+                var searchTopTracks = getFromApi(topTracksEndpoint);
 
-                }
+                searchTopTracks.on('end', function(topTracksCollection) {
+                    relatedArtist.tracks = topTracksCollection.tracks;
+                    completed++;
+                    checkComplete();
+                });
 
-                completed++;
+                searchTopTracks.on('error', function(code) {
+                    res.statusCode = 200;
+                    console.log('Could not retrieve tracks. Error code: ' + code);
+                    completed++;
+                    checkComplete();
+                });
             });
         });
 
         searchRelated.on('error', function(code) {
-            // console.log(code);
-            res.sendStatus(404);
+            res.sendStatus(code);
+            console.log('Could not retrieve related artists. Error: ' + code);
         });
     });
 
